@@ -43,7 +43,7 @@ void clear_screen(void);
 
 //
 //
-typedef enum res{ EXIT, LINE, RECT, CIRCLE, UNDO, SAVE, UNKNOWN, ERRNONINT, ERRLACKARGS, NOCOMMAND} Result;
+typedef enum res{ EXIT, LINE, RECT, CIRCLE, LOAD, ERROR, UNDO, SAVE, UNKNOWN, ERRNONINT, ERRLACKARGS, NOCOMMAND} Result;
 //
 //
 
@@ -52,11 +52,12 @@ char *strresult(Result res);
 
 int max(const int a, const int b);
 void draw_line(Canvas *c, const int x0, const int y0, const int x1, const int y1);
+void rect(Canvas *c, const int x0, const int y0, const int width, const int height);
+void circle(Canvas *c, const int x0, const int y0, const int r);
 
 //
 //
-void rect(Canvas *c, const int x0, const int y0, const int width, const int height);
-void circle(Canvas *c, const int x0, const int y0, const int r);
+int load(Canvas *c, History *his, const char *txt_filename);
 //
 //
 
@@ -71,7 +72,7 @@ int main(int argc, char **argv) {
     
     const int bufsize = 1000;
     
-    // [*]
+    // コマンドの履歴を順々に格納する線形リストのobject
     History his = (History){ .begin = NULL, .bufsize = bufsize};
     
     int width;
@@ -91,6 +92,7 @@ int main(int argc, char **argv) {
 	    fprintf(stderr, "%s: irregular character found %s\n", argv[2],e);
 	    return EXIT_FAILURE;
 	}
+	// うまく通ったらこの下に進む？
 	width = (int)w;
 	height = (int)h;
     }
@@ -118,15 +120,11 @@ int main(int argc, char **argv) {
 	// 返ってきた結果に応じてコマンド結果を表示
 	clear_command();
 	printf("%s\n",strresult(r));
-
-	//
-	//
+	// LINEの場合はHistory構造体に入れる
 	if (r == LINE | r == RECT | r == CIRCLE) {
 	    // [*]
 	    push_command(&his,buf);
 	}
-	//
-	//
 	
 	rewind_screen(2); // command results
 	clear_command(); // command itself
@@ -163,7 +161,6 @@ void reset_canvas(Canvas *c)
     const int height = c->height;
     memset(c->canvas[0], ' ', width*height*sizeof(char));
 }
-
 
 void print_canvas(Canvas *c)
 {
@@ -239,8 +236,6 @@ void draw_line(Canvas *c, const int x0, const int y0, const int x1, const int y1
     }
 }
 
-//
-//
 void rect(Canvas *c, const int x0, const int y0, const int width, const int height)
 {
     char pen = c->pen;
@@ -291,9 +286,33 @@ void circle(Canvas *c, const int x0, const int y0, const int r)
         }
     }
 }
+
+//
+//
+int load(Canvas *c, History *his, const char *txt_filename)
+{
+// 1行ずつテキストを読み込む
+    FILE *fp;
+		if ((fp = fopen(txt_filename, "r")) == NULL) {
+			return 0;
+    }
+// 各行に対して, interpret_commandを実行
+		char str[100];
+		while (fgets(str, 100, fp) != NULL) {
+			interpret_command(str, his, c); // 怪しい
+			push_command(his, str);
+			// for (int i = 0; i < 100; i++) {
+			// 	str[i] = 0;
+			// }
+		}
+// 行が全部終わったら, 終了 
+    fclose(fp);
+		return 1;
+}
 //
 //
 
+// 引数にファイル名を渡してそこにコマンド履歴を格納！
 void save_history(const char *filename, History *his)
 {
     const char *default_history_file = "history.txt";
@@ -328,7 +347,7 @@ Result interpret_command(const char *command, History *his, Canvas *c)
 	int p[4] = {0}; // p[0]: x0, p[1]: y0, p[2]: x1, p[3]: x1 
 	char *b[4];
 	for (int i = 0 ; i < 4; i++){
-	    b[i] = strtok(NULL, " ");
+	    b[i] = strtok(NULL, " "); // 空白、ごとに区切って入力コマンドを読み取る！！
 	    if (b[i] == NULL){
 		return ERRLACKARGS;
 	    }
@@ -346,8 +365,6 @@ Result interpret_command(const char *command, History *his, Canvas *c)
 	return LINE;
     }
 
-    //
-    //
     if (strcmp(s, "rect") == 0) {
 	int p[4] = {0}; // p[0]: x0, p[1]: y0, p[2]: width, p[3]: height
 	char *b[4];
@@ -391,8 +408,24 @@ Result interpret_command(const char *command, History *his, Canvas *c)
 	circle(c,p[0],p[1],p[2]);
 	return CIRCLE;
     }
+
     //
     //
+    if (strcmp(s, "load") == 0) {
+			char *b[1];
+			b[0] = strtok(NULL, " "); // 引数のファイル名を読み取り
+			if (b[0] == NULL) {
+				b[0] = "history.txt";
+			}
+			int r = load(c, his, b[0]);
+			if (r == 0) {
+				return ERROR;
+			} else {
+				return LOAD;
+			}
+    }
+		//
+		//
 
     if (strcmp(s, "save") == 0) {
 	s = strtok(NULL, " ");
@@ -465,13 +498,19 @@ char *strresult(Result res){
 	return "history saved";
     case LINE:
 	return "1 line drawn";
-
-    //
     case RECT:
 	return "1 rect drawn";
     case CIRCLE:
 	return "1 circle drawn";
+
     //
+		//
+    case LOAD:
+	return "1 text data reproduced";
+    case ERROR:
+	return "error: cannot open file";
+	  //
+		//
 
     case UNDO:
 	return "undo!";

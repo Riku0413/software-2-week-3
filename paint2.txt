@@ -1,0 +1,18 @@
+circle 15 8 7
+line 15 8 19 8
+line 15 8 15 3
+
+rect 10 18 20 8
+rect 13 20 2 4
+rect 18 21 0 0
+rect 18 23 0 0
+rect 21 20 2 4
+rect 25 20 2 4
+
+circle 60 20 15
+line 60 20 50 15
+line 60 20 65 10
+
+circle 25 33 5
+line 25 33 22 33
+line 25 33 25 35
