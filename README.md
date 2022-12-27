@@ -204,3 +204,56 @@ return "error: cannot open file";
 ```
 
 ## 課題3
+
+### 変更点1
+下記のようにchpenコマンドの識別子CHPENを追加。
+```
+typedef enum res{ EXIT, LINE, RECT, CIRCLE, LOAD, ERROR, CHPEN, UNDO, SAVE, UNKNOWN, ERRNONINT, ERRLACKARGS, NOCOMMAND} Result;
+```
+
+### 変更点2
+chpen()関数のプロトタイプ宣言。
+```
+void chpen(Canvas *c, History *his, const char *str);
+```
+
+### 変更点3
+ペンの文字を変更したときも履歴に追加する。
+```
+if (r == LINE | r == RECT | r == CIRCLE | r == CHPEN) {
+		// [*]
+		push_command(&his,buf);
+}
+```
+
+### 変更点4
+chpen()関数の中身を作成。引数に応じて文字の種類を変える。
+```
+void chpen(Canvas *c, History *his, const char *str)
+{
+	c->pen = str[0];
+}
+```
+
+### 変更点5
+interpret_command()関数内にchpenコマンドを読み取るプログラムを追加。
+```
+if (strcmp(s, "chpen") == 0) {
+	char *b[1];
+	b[0] = strtok(NULL, " "); // 引数の文字を読み取り
+	if (b[0] == NULL) {
+		b[0] = "*";
+	}
+	chpen(c, his, b[0]);
+	return CHPEN;
+}
+```
+
+### 変更点6
+chpenコマンド実行時の表示文を追加。
+```
+	case CHPEN:
+return "pentype changed";
+```
+
+## 課題4
