@@ -257,3 +257,46 @@ return "pentype changed";
 ```
 
 ## 課題4
+
+### 追加した機能
+・chcolorコマンド
+
+・ペンの色を, default, red, green, yellow, blue, の５種類間で変更できる
+
+・chcolorコマンドは線形リストとして格納される
+
+### 実行方法
+まず、ターミナルで以下のコードを入力しコンパイルする。
+```
+gcc -o paint4 paint4.c
+```
+
+続いて、以下のコードによりキャンバスを作る。
+```
+./paint4 80 40
+```
+
+キャンバスが表示されたら、以下のコードのいずれかを実行する。
+```
+// chcolor default
+// chcolor red
+// chcolor green
+// chcolor yellow
+// chcolor blue
+```
+
+ここで、例えば以下のコードを実行したとする。するとペンの色が赤色に変更される。
+```
+chcolor red
+```
+
+次に、以下のコードを実行する。すると、画面に赤色の円が表示される。
+```
+circle 40 20 15
+```
+
+最後に次のコードを実行する。すると、history.txtファイルが生成され、以下のテキストが書き込まれる。
+```
+chcolor red
+circle 40 20 15
+```
